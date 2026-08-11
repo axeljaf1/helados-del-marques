@@ -12,6 +12,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
+      <button class="sidebar-close" id="sidebarClose" aria-label="Cerrar menú">×</button>
       <div class="brand">
         <div class="brand-mark">🍦</div>
         <div><strong>Helados del Marqués</strong><span>Control de negocio</span></div>
@@ -63,6 +64,14 @@
             <div class="promo-card"><span>🍧</span><div><strong>Grande</strong><small>$80 MXN</small></div></div>
           </div>
         </article>
+
+        <section class="promo-section">
+          <div class="section-head promo-head">
+            <div><h2>Promociones y tamaños</h2><p>Administra desde aquí los precios y promociones que aparecen en el inicio.</p></div>
+            <button class="btn primary" id="editPromotions">Editar promociones</button>
+          </div>
+          <div class="promo-grid" id="promoGrid"></div>
+        </section>
 
         <div class="stats-grid">
           <article class="stat-card"><div class="stat-icon green">$</div><div><span>Ventas de hoy</span><strong id="kpiSales">$0.00</strong><small id="kpiSalesCount">0 operaciones</small></div></article>
