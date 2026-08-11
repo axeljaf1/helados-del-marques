@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Helados del Marqués — Gestión de heladería</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">🍦</div>
+        <div><strong>Helados del Marqués</strong><span>Control de negocio</span></div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-view="dashboard">⌂ <span>Dashboard</span></button>
+        <button class="nav-item" data-view="ventas">＋ <span>Ventas</span></button>
+        <button class="nav-item" data-view="inventario">▣ <span>Inventario</span></button>
+        <button class="nav-item" data-view="caja">◉ <span>Flujo de caja</span></button>
+        <button class="nav-item" data-view="reportes">▤ <span>Reportes</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="status-dot"></div>
+        <div><small>Sistema local</small><strong>Datos guardados</strong></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <button class="mobile-menu" id="mobileMenu">☰</button>
+          <span class="eyebrow">GESTIÓN</span>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="top-actions">
+          <span id="today"></span>
+          <button class="btn primary" data-view="ventas">+ Nueva venta</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active-view">
+        <div class="hero">
+          <div>
+            <span class="eyebrow">RESUMEN DEL DÍA</span>
+            <h2>Controla tu negocio en un solo lugar.</h2>
+            <p>Ventas, inventario y flujo de caja de Helados del Marqués.</p>
+          </div>
+          <div class="hero-icon">🍨</div>
+        </div>
+
+        <article class="panel promotions-panel">
+          <div class="panel-head">
+            <div><h3>Promociones y tamaños</h3><p>Presentaciones disponibles</p></div>
+            <span class="promo-label">MENÚ</span>
+          </div>
+          <div class="promo-grid">
+            <div class="promo-card"><span>🍦</span><div><strong>Chico</strong><small>$30 MXN</small></div></div>
+            <div class="promo-card"><span>🍨</span><div><strong>Mediano</strong><small>$35 MXN</small></div></div>
+            <div class="promo-card"><span>🍧</span><div><strong>Grande</strong><small>$80 MXN</small></div></div>
+          </div>
+        </article>
+
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-icon green">$</div><div><span>Ventas de hoy</span><strong id="kpiSales">$0.00</strong><small id="kpiSalesCount">0 operaciones</small></div></article>
+          <article class="stat-card"><div class="stat-icon blue">▣</div><div><span>Productos</span><strong id="kpiProducts">0</strong><small>registrados</small></div></article>
+          <article class="stat-card"><div class="stat-icon orange">!</div><div><span>Stock bajo</span><strong id="kpiLow">0</strong><small>requieren atención</small></div></article>
+          <article class="stat-card"><div class="stat-icon purple">◉</div><div><span>Saldo de caja</span><strong id="kpiCash">$0.00</strong><small>entradas - salidas</small></div></article>
+        </div>
+
+        <div class="two-col">
+          <article class="panel">
+            <div class="panel-head"><div><h3>Ventas recientes</h3><p>Últimas operaciones registradas</p></div><button class="text-btn" data-view="ventas">Ver todas →</button></div>
+            <div id="recentSales" class="table-wrap"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>Productos más vendidos</h3><p>Por cantidad de unidades</p></div></div>
+            <div id="topProducts" class="rank-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="ventas" class="view">
+        <div class="section-head"><div><h2>Nueva venta</h2><p>Registra una venta y descuenta automáticamente el inventario.</p></div></div>
+        <div class="sales-layout">
+          <article class="panel sale-panel">
+            <div class="product-grid" id="saleProducts"></div>
+          </article>
+          <article class="panel cart-panel">
+            <div class="panel-head"><div><h3>Ticket</h3><p id="cartCount">0 productos</p></div><button class="text-btn danger" id="clearCart">Vaciar</button></div>
+            <div id="cartItems" class="cart-items"></div>
+            <div class="checkout">
+              <div class="total-row"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
+              <label>Método de pago
+                <select id="paymentMethod"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select>
+              </label>
+              <button class="btn primary full" id="completeSale">Cobrar venta</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="inventario" class="view">
+        <div class="section-head"><div><h2>Inventario</h2><p>Controla existencias, precios y niveles mínimos.</p></div><button class="btn primary" id="addProduct">+ Producto</button></div>
+        <article class="panel">
+          <div id="inventoryTable" class="table-wrap"></div>
+        </article>
+      </section>
+
+      <section id="caja" class="view">
+        <div class="section-head"><div><h2>Flujo de caja</h2><p>Registra entradas y salidas de dinero.</p></div><button class="btn primary" id="addMovement">+ Movimiento</button></div>
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-icon green">$</div><div><span>Entradas</span><strong id="cashIn">$0.00</strong></div></article>
+          <article class="stat-card"><div class="stat-icon orange">$</div><div><span>Salidas</span><strong id="cashOut">$0.00</strong></div></article>
+          <article class="stat-card"><div class="stat-icon purple">◉</div><div><span>Saldo</span><strong id="cashBalance">$0.00</strong></div></article>
+        </div>
+        <article class="panel"><div id="cashTable" class="table-wrap"></div></article>
+      </section>
+
+      <section id="reportes" class="view">
+        <div class="section-head"><div><h2>Reportes</h2><p>Consulta el rendimiento de tu negocio.</p></div></div>
+        <div class="two-col">
+          <article class="panel"><div class="panel-head"><div><h3>Ventas por producto</h3><p>Unidades y facturación acumulada</p></div></div><div id="reportProducts"></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>Ventas por método</h3><p>Distribución de cobros</p></div></div><div id="reportPayments"></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden"><div class="modal-card"><button class="modal-close" id="modalClose">×</button><div id="modalContent"></div></div></div>
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
