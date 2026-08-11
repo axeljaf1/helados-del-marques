@@ -21,3 +21,13 @@ nav{display:grid;gap:6px}.nav-item{border:0;background:transparent;color:#aeb4c7
 .promo-card{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;background:#fbfbfe}
 .promo-card>span{font-size:28px}.promo-card strong,.promo-card small{display:block}.promo-card strong{font-size:13px}.promo-card small{color:var(--primary);font-weight:800;margin-top:3px}.promo-label{font-size:9px;font-weight:800;letter-spacing:1px;color:var(--primary);background:#eeeaff;padding:6px 8px;border-radius:7px}
 @media(max-width:760px){.promo-grid{grid-template-columns:1fr}}
+
+.sidebar-close{display:none;position:absolute;right:12px;top:10px;width:34px;height:34px;border:0;border-radius:9px;background:#292d43;color:#fff;font-size:24px;cursor:pointer}
+.mobile-overlay{display:none}
+.promo-section{margin:20px 0}.promo-head{margin-bottom:12px}
+.promo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.promo-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
+.promo-card .promo-emoji{font-size:35px;width:52px;height:52px;border-radius:14px;background:#f3f1ff;display:grid;place-items:center}
+.promo-card strong{display:block;font-family:"Plus Jakarta Sans";font-size:15px}.promo-card small{display:block;color:var(--muted);font-size:11px;margin-top:4px}.promo-card .promo-price{display:block;color:var(--primary);font-weight:800;font-size:20px;margin-top:7px}
+.promo-edit-row{display:grid;grid-template-columns:1fr 120px;gap:10px;align-items:center}.promo-edit-row label{font-size:11px;color:var(--muted)}.promo-edit-row input{width:100%;margin-top:5px;padding:10px;border:1px solid var(--line);border-radius:9px}
+@media(max-width:760px){.sidebar-close{display:block}.mobile-overlay{position:fixed;inset:0;background:rgba(16,19,31,.45);z-index:15}.mobile-overlay.show{display:block}.sidebar{z-index:30}.promo-grid{grid-template-columns:1fr}}
