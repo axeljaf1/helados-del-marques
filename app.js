@@ -5,10 +5,16 @@ const defaultData={
     {id:2,name:"Helado — Mediano",price:35,stock:30,min:8,emoji:"🍨"},
     {id:3,name:"Helado — Grande",price:80,stock:18,min:5,emoji:"🍧"}
   ],
+  promotions:[
+    {id:1,title:"Chico",price:30,description:"Presentación chica",emoji:"🍦"},
+    {id:2,title:"Mediano",price:35,description:"Presentación mediana",emoji:"🍨"},
+    {id:3,title:"Grande",price:80,description:"Presentación grande",emoji:"🍧"}
+  ],
   sales:[],
   movements:[]
 };
 let data=JSON.parse(localStorage.getItem(KEY)||"null")||defaultData;
+if(!data.promotions) data.promotions=defaultData.promotions.map(x=>({...x}));
 let cart=[];
 
 const $=s=>document.querySelector(s);
@@ -29,13 +35,30 @@ function go(view){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 $$("[data-view]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
-$("#mobileMenu").onclick=()=>$(".sidebar").classList.toggle("open");
+const sidebar=$(".sidebar");
+const mobileOverlay=document.createElement("div");mobileOverlay.className="mobile-overlay";document.body.appendChild(mobileOverlay);
+function closeSidebar(){sidebar.classList.remove("open");mobileOverlay.classList.remove("show")}
+function openSidebar(){sidebar.classList.add("open");mobileOverlay.classList.add("show")}
+$("#mobileMenu").onclick=openSidebar;$("#sidebarClose").onclick=closeSidebar;mobileOverlay.onclick=closeSidebar;$$(".nav-item").forEach(b=>b.addEventListener("click",closeSidebar));
 $("#today").textContent=new Date().toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short"});
 
 function render(){
-  renderDashboard();renderProducts();renderCart();renderInventory();renderCash();renderReports();
+  renderDashboard();renderPromotions();renderProducts();renderCart();renderInventory();renderCash();renderReports();
 }
 function salesToday(){return data.sales.filter(s=>s.dateKey===todayKey())}
+function renderPromotions(){
+ const p=data.promotions||[];
+ $("#promoGrid").innerHTML=p.map(x=>`<article class="promo-card"><div class="promo-emoji">${x.emoji}</div><div><strong>${x.title}</strong><small>${x.description}</small><span class="promo-price">${money(x.price)}</span></div></article>`).join("");
+}
+$("#editPromotions").onclick=()=>{
+ const p=data.promotions||[];
+ openModal(`<h2>Editar promociones</h2><p class="section-head p">Modifica los nombres, precios y descripciones.</p><form id="promotionForm" class="form-grid">
+ ${p.map((x,i)=>`<div class="promo-edit-row"><div><label>Nombre ${i+1}</label><input name="title${i}" value="${x.title}" required></div><div><label>Precio</label><input name="price${i}" type="number" min="0" step=".01" value="${x.price}" required></div></div><div class="form-group"><label>Descripción ${i+1}</label><input name="description${i}" value="${x.description}" required></div>`).join("")}
+ <div class="form-actions"><button type="button" class="btn" onclick="$('#modal').classList.add('hidden')">Cancelar</button><button class="btn primary">Guardar cambios</button></div></form>`);
+};
+document.addEventListener("submit",e=>{
+ if(e.target.id==="promotionForm"){e.preventDefault();const f=new FormData(e.target);data.promotions.forEach((x,i)=>{x.title=f.get(`title${i}`);x.price=+f.get(`price${i}`);x.description=f.get(`description${i}`)});save();$("#modal").classList.add("hidden");render();showToast("Promociones actualizadas")}
+});
 function renderDashboard(){
   const s=salesToday(), total=s.reduce((a,x)=>a+x.total,0);
   $("#kpiSales").textContent=money(total);$("#kpiSalesCount").textContent=`${s.length} ${s.length===1?"operación":"operaciones"}`;
