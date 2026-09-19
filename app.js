@@ -1,133 +1,260 @@
-const KEY="helados_del_marques_v1";
-const defaultData={
-  products:[
-    {id:1,name:"Helado — Chico",price:30,stock:40,min:10,emoji:"🍦"},
-    {id:2,name:"Helado — Mediano",price:35,stock:30,min:8,emoji:"🍨"},
-    {id:3,name:"Helado — Grande",price:80,stock:18,min:5,emoji:"🍧"}
-  ],
-  promotions:[
-    {id:1,title:"Chico",price:30,description:"Presentación chica",emoji:"🍦"},
-    {id:2,title:"Mediano",price:35,description:"Presentación mediana",emoji:"🍨"},
-    {id:3,title:"Grande",price:80,description:"Presentación grande",emoji:"🍧"}
-  ],
-  sales:[],
-  movements:[]
-};
-let data=JSON.parse(localStorage.getItem(KEY)||"null")||defaultData;
-if(!data.promotions) data.promotions=defaultData.promotions.map(x=>({...x}));
-let cart=[];
+const xmlInput = document.getElementById("xmlInput");
+const dropZone = document.getElementById("dropZone");
+const fileName = document.getElementById("fileName");
 
-const $=s=>document.querySelector(s);
-const $$=s=>document.querySelectorAll(s);
-const money=n=>new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"}).format(n);
-const save=()=>localStorage.setItem(KEY,JSON.stringify(data));
-const dateTime=()=>new Date().toLocaleString("es-MX",{dateStyle:"short",timeStyle:"short"});
-const todayKey=()=>new Date().toLocaleDateString("es-MX");
+const resultSection = document.getElementById("resultSection");
+const output = document.getElementById("output");
 
-function showToast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
-function go(view){
-  $$(".view").forEach(v=>v.classList.remove("active-view"));
-  $(`#${view}`).classList.add("active-view");
-  $$(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
-  const names={dashboard:"Dashboard",ventas:"Ventas",inventario:"Inventario",caja:"Flujo de caja",reportes:"Reportes"};
-  $("#pageTitle").textContent=names[view]||"Dashboard";
-  render();
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-$$("[data-view]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
-const sidebar=$(".sidebar");
-const mobileOverlay=document.createElement("div");mobileOverlay.className="mobile-overlay";document.body.appendChild(mobileOverlay);
-function closeSidebar(){sidebar.classList.remove("open");mobileOverlay.classList.remove("show")}
-function openSidebar(){sidebar.classList.add("open");mobileOverlay.classList.add("show")}
-$("#mobileMenu").onclick=openSidebar;$("#sidebarClose").onclick=closeSidebar;mobileOverlay.onclick=closeSidebar;$$(".nav-item").forEach(b=>b.addEventListener("click",closeSidebar));
-$("#today").textContent=new Date().toLocaleDateString("es-MX",{weekday:"short",day:"2-digit",month:"short"});
+const copyButton = document.getElementById("copyButton");
+const downloadButton = document.getElementById("downloadButton");
 
-function render(){
-  renderDashboard();renderPromotions();renderProducts();renderCart();renderInventory();renderCash();renderReports();
-}
-function salesToday(){return data.sales.filter(s=>s.dateKey===todayKey())}
-function renderPromotions(){
- const p=data.promotions||[];
- $("#promoGrid").innerHTML=p.map(x=>`<article class="promo-card"><div class="promo-emoji">${x.emoji}</div><div><strong>${x.title}</strong><small>${x.description}</small><span class="promo-price">${money(x.price)}</span></div></article>`).join("");
-}
-$("#editPromotions").onclick=()=>{
- const p=data.promotions||[];
- openModal(`<h2>Editar promociones</h2><p class="section-head p">Modifica los nombres, precios y descripciones.</p><form id="promotionForm" class="form-grid">
- ${p.map((x,i)=>`<div class="promo-edit-row"><div><label>Nombre ${i+1}</label><input name="title${i}" value="${x.title}" required></div><div><label>Precio</label><input name="price${i}" type="number" min="0" step=".01" value="${x.price}" required></div></div><div class="form-group"><label>Descripción ${i+1}</label><input name="description${i}" value="${x.description}" required></div>`).join("")}
- <div class="form-actions"><button type="button" class="btn" onclick="$('#modal').classList.add('hidden')">Cancelar</button><button class="btn primary">Guardar cambios</button></div></form>`);
-};
-document.addEventListener("submit",e=>{
- if(e.target.id==="promotionForm"){e.preventDefault();const f=new FormData(e.target);data.promotions.forEach((x,i)=>{x.title=f.get(`title${i}`);x.price=+f.get(`price${i}`);x.description=f.get(`description${i}`)});save();$("#modal").classList.add("hidden");render();showToast("Promociones actualizadas")}
+
+/*
+    Cuando seleccionamos un archivo
+*/
+
+xmlInput.addEventListener("change", function () {
+
+    if (!this.files.length) return;
+
+    processFile(this.files[0]);
+
 });
-function renderDashboard(){
-  const s=salesToday(), total=s.reduce((a,x)=>a+x.total,0);
-  $("#kpiSales").textContent=money(total);$("#kpiSalesCount").textContent=`${s.length} ${s.length===1?"operación":"operaciones"}`;
-  $("#kpiProducts").textContent=data.products.length;
-  $("#kpiLow").textContent=data.products.filter(p=>p.stock<=p.min).length;
-  const balance=data.movements.reduce((a,m)=>a+(m.type==="Entrada"?m.amount:-m.amount),0);
-  $("#kpiCash").textContent=money(balance);
-  const recent=data.sales.slice(-6).reverse();
-  $("#recentSales").innerHTML=recent.length?`<table class="table"><thead><tr><th>Hora</th><th>Productos</th><th>Pago</th><th>Total</th></tr></thead><tbody>${recent.map(s=>`<tr><td>${s.time}</td><td>${s.items.map(i=>`${i.qty}× ${i.name}`).join(", ")}</td><td>${s.payment}</td><td><strong>${money(s.total)}</strong></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Aún no hay ventas registradas.</div>`;
-  const map={};data.sales.forEach(s=>s.items.forEach(i=>{map[i.name]=(map[i.name]||0)+i.qty}));
-  const top=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  $("#topProducts").innerHTML=top.length?top.map((x,i)=>`<div class="rank"><div class="rank-num">${i+1}</div><div class="rank-info"><strong>${x[0]}</strong><small>${x[1]} unidades</small></div></div>`).join(""):`<div class="empty">Las ventas aparecerán aquí.</div>`;
-}
-function renderProducts(){
-  $("#saleProducts").innerHTML=data.products.map(p=>`<button class="product-card" onclick="addToCart(${p.id})" ${p.stock<=0?"disabled":""}><div class="product-emoji">${p.emoji}</div><strong>${p.name}</strong><small>Stock: ${p.stock}</small><span class="price">${money(p.price)}</span></button>`).join("");
-}
-window.addToCart=id=>{
-  const p=data.products.find(x=>x.id===id);if(!p||p.stock<=0)return showToast("Producto sin stock");
-  const c=cart.find(x=>x.id===id);
-  if(c){if(c.qty>=p.stock)return showToast("No hay más stock disponible");c.qty++}else cart.push({id:p.id,name:p.name,price:p.price,qty:1});
-  renderCart();
-};
-window.changeQty=(id,d)=>{
-  const c=cart.find(x=>x.id===id),p=data.products.find(x=>x.id===id);if(!c)return;
-  c.qty+=d;if(c.qty<=0)cart=cart.filter(x=>x.id!==id);if(c.qty>p.stock)c.qty=p.stock;renderCart();
-};
-function renderCart(){
-  const count=cart.reduce((a,x)=>a+x.qty,0),total=cart.reduce((a,x)=>a+x.qty*x.price,0);
-  $("#cartCount").textContent=`${count} ${count===1?"producto":"productos"}`;$("#cartTotal").textContent=money(total);
-  $("#cartItems").innerHTML=cart.length?cart.map(c=>`<div class="cart-row"><div class="cart-row-info"><strong>${c.name}</strong><small>${money(c.price)} c/u</small></div><div class="qty"><button onclick="changeQty(${c.id},-1)">−</button><b>${c.qty}</b><button onclick="changeQty(${c.id},1)">+</button></div></div>`).join(""):`<div class="empty">Agrega productos al ticket.</div>`;
-}
-$("#clearCart").onclick=()=>{cart=[];renderCart()};
-$("#completeSale").onclick=()=>{
-  if(!cart.length)return showToast("Agrega al menos un producto");
-  const total=cart.reduce((a,x)=>a+x.qty*x.price,0), payment=$("#paymentMethod").value;
-  cart.forEach(c=>{const p=data.products.find(x=>x.id===c.id);p.stock-=c.qty});
-  const d=new Date();
-  data.sales.push({id:Date.now(),dateKey:todayKey(),time:d.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),items:cart.map(x=>({...x})),total,payment});
-  data.movements.push({id:Date.now()+1,dateKey:todayKey(),time:d.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),type:"Entrada",category:"Venta",description:"Venta de helados",amount:total});
-  cart=[];save();render();showToast("Venta registrada correctamente");
-};
-function renderInventory(){
-  $("#inventoryTable").innerHTML=`<table class="table"><thead><tr><th>Producto</th><th>Precio</th><th>Stock</th><th>Mínimo</th><th>Estado</th><th>Acción</th></tr></thead><tbody>${data.products.map(p=>`<tr><td>${p.emoji} <strong>${p.name}</strong></td><td>${money(p.price)}</td><td>${p.stock}</td><td>${p.min}</td><td><span class="badge ${p.stock<=p.min?"low":"ok"}">${p.stock<=p.min?"Stock bajo":"En existencia"}</span></td><td><button class="text-btn" onclick="editProduct(${p.id})">Editar</button></td></tr>`).join("")}</tbody></table>`;
-}
-function openModal(html){$("#modalContent").innerHTML=html;$("#modal").classList.remove("hidden")}
-$("#modalClose").onclick=()=>$("#modal").classList.add("hidden");
-$("#addProduct").onclick=()=>openModal(`<h2>Nuevo producto</h2><p class="section-head p">Agrega una presentación de helado.</p><form id="productForm" class="form-grid"><div class="form-group"><label>Nombre</label><input name="name" class="form-input" required></div><div class="form-group"><label>Precio</label><input name="price" type="number" step=".01" min="0" required></div><div class="form-group"><label>Stock inicial</label><input name="stock" type="number" min="0" required></div><div class="form-group"><label>Stock mínimo</label><input name="min" type="number" min="0" value="5" required></div><div class="form-actions"><button type="button" class="btn" onclick="$('#modal').classList.add('hidden')">Cancelar</button><button class="btn primary">Guardar</button></div></form>`);
-document.addEventListener("submit",e=>{
- if(e.target.id==="productForm"){e.preventDefault();const f=new FormData(e.target);data.products.push({id:Date.now(),name:f.get("name"),price:+f.get("price"),stock:+f.get("stock"),min:+f.get("min"),emoji:"🍦"});save();$("#modal").classList.add("hidden");render();showToast("Producto agregado")}
- if(e.target.id==="movementForm"){e.preventDefault();const f=new FormData(e.target);data.movements.push({id:Date.now(),dateKey:todayKey(),time:new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),type:f.get("type"),category:f.get("category"),description:f.get("description"),amount:+f.get("amount")});save();$("#modal").classList.add("hidden");render();showToast("Movimiento registrado")}
+
+
+/*
+    Drag & Drop
+*/
+
+dropZone.addEventListener("dragover", function (event) {
+
+    event.preventDefault();
+
+    dropZone.classList.add("dragover");
+
 });
-window.editProduct=id=>{
- const p=data.products.find(x=>x.id===id);
- openModal(`<h2>Editar producto</h2><form id="editProductForm" class="form-grid"><input type="hidden" name="id" value="${p.id}"><div class="form-group"><label>Nombre</label><input name="name" value="${p.name}" required></div><div class="form-group"><label>Precio</label><input name="price" type="number" step=".01" value="${p.price}" required></div><div class="form-group"><label>Stock</label><input name="stock" type="number" value="${p.stock}" required></div><div class="form-group"><label>Stock mínimo</label><input name="min" type="number" value="${p.min}" required></div><div class="form-actions"><button type="button" class="btn" onclick="$('#modal').classList.add('hidden')">Cancelar</button><button class="btn primary">Guardar</button></div></form>`);
-};
-document.addEventListener("submit",e=>{if(e.target.id==="editProductForm"){e.preventDefault();const f=new FormData(e.target),p=data.products.find(x=>x.id==f.get("id"));p.name=f.get("name");p.price=+f.get("price");p.stock=+f.get("stock");p.min=+f.get("min");save();$("#modal").classList.add("hidden");render();showToast("Producto actualizado")}});
-$("#addMovement").onclick=()=>openModal(`<h2>Nuevo movimiento</h2><form id="movementForm" class="form-grid"><div class="form-group"><label>Tipo</label><select name="type"><option>Entrada</option><option>Salida</option></select></div><div class="form-group"><label>Categoría</label><select name="category"><option>Venta</option><option>Compra</option><option>Gasto</option><option>Otro</option></select></div><div class="form-group"><label>Descripción</label><input name="description" required placeholder="Ej. compra de insumos"></div><div class="form-group"><label>Monto</label><input name="amount" type="number" step=".01" min="0" required></div><div class="form-actions"><button type="button" class="btn" onclick="$('#modal').classList.add('hidden')">Cancelar</button><button class="btn primary">Guardar</button></div></form>`);
-function renderCash(){
- const ins=data.movements.filter(m=>m.type==="Entrada").reduce((a,m)=>a+m.amount,0),outs=data.movements.filter(m=>m.type==="Salida").reduce((a,m)=>a+m.amount,0);
- $("#cashIn").textContent=money(ins);$("#cashOut").textContent=money(outs);$("#cashBalance").textContent=money(ins-outs);
- const rows=data.movements.slice().reverse();
- $("#cashTable").innerHTML=rows.length?`<table class="table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead><tbody>${rows.map(m=>`<tr><td>${m.dateKey} ${m.time}</td><td><span class="badge ${m.type==="Entrada"?"ok":"low"}">${m.type}</span></td><td>${m.category}</td><td>${m.description}</td><td><strong>${m.type==="Entrada"?"+":"-"}${money(m.amount)}</strong></td></tr>`).join("")}</tbody></table>`:`<div class="empty">No hay movimientos registrados.</div>`;
+
+
+dropZone.addEventListener("dragleave", function () {
+
+    dropZone.classList.remove("dragover");
+
+});
+
+
+dropZone.addEventListener("drop", function (event) {
+
+    event.preventDefault();
+
+    dropZone.classList.remove("dragover");
+
+    const file = event.dataTransfer.files[0];
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".xml")) {
+
+        alert("Selecciona un archivo XML.");
+
+        return;
+    }
+
+    processFile(file);
+
+});
+
+
+/*
+    Procesar XML
+*/
+
+function processFile(file) {
+
+    fileName.textContent = file.name;
+
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+
+        const xmlText = event.target.result;
+
+        try {
+
+            const parser = new DOMParser();
+
+            const xml = parser.parseFromString(
+                xmlText,
+                "application/xml"
+            );
+
+            const error = xml.querySelector("parsererror");
+
+            if (error) {
+
+                throw new Error(
+                    "El archivo XML no es válido."
+                );
+
+            }
+
+            const text = xmlToPlainText(xml);
+
+            output.textContent = text;
+
+            resultSection.classList.remove("hidden");
+
+            resultSection.scrollIntoView({
+                behavior: "smooth"
+            });
+
+        } catch (error) {
+
+            alert(
+                "No se pudo procesar el XML:\n\n" +
+                error.message
+            );
+
+        }
+
+    };
+
+    reader.readAsText(file);
+
 }
-function renderReports(){
- const map={};data.sales.forEach(s=>s.items.forEach(i=>{if(!map[i.name])map[i.name]={qty:0,total:0};map[i.name].qty+=i.qty;map[i.name].total+=i.qty*i.price}));
- const vals=Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
- $("#reportProducts").innerHTML=vals.length?vals.map(([n,v])=>`<div class="rank"><div class="rank-info"><strong>${n}</strong><small>${v.qty} unidades</small></div><div class="rank-price">${money(v.total)}</div></div>`).join(""):`<div class="empty">Sin datos todavía.</div>`;
- const pay={};data.sales.forEach(s=>pay[s.payment]=(pay[s.payment]||0)+s.total);
- const total=Object.values(pay).reduce((a,b)=>a+b,0)||1;
- $("#reportPayments").innerHTML=Object.entries(pay).length?Object.entries(pay).map(([n,v])=>`<div class="rank"><div class="rank-info"><strong>${n}</strong><small>${Math.round(v/total*100)}% del total</small></div><div class="rank-price">${money(v)}</div></div>`).join(""):`<div class="empty">Sin cobros registrados.</div>`;
+
+
+/*
+    Convierte XML en texto plano organizado
+*/
+
+function xmlToPlainText(xml) {
+
+    const lines = [];
+
+    function processNode(node, level = 0) {
+
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return;
+        }
+
+        const children = Array.from(node.children);
+
+        const text = Array.from(node.childNodes)
+            .filter(child =>
+                child.nodeType === Node.TEXT_NODE
+            )
+            .map(child => child.textContent.trim())
+            .filter(Boolean)
+            .join(" ");
+
+        const indent = "  ".repeat(level);
+
+        /*
+            Si es un elemento con texto directo
+        */
+
+        if (text && children.length === 0) {
+
+            lines.push(
+                `${indent}${node.tagName}: ${text}`
+            );
+
+        } else {
+
+            lines.push(
+                `${indent}${node.tagName}`
+            );
+
+            /*
+                Atributos
+            */
+
+            if (node.attributes.length) {
+
+                for (const attribute of node.attributes) {
+
+                    lines.push(
+                        `${indent}  ${attribute.name}: ${attribute.value}`
+                    );
+
+                }
+
+            }
+
+            /*
+                Hijos
+            */
+
+            for (const child of children) {
+
+                processNode(child, level + 1);
+
+            }
+        }
+    }
+
+    processNode(xml.documentElement);
+
+    return lines.join("\n");
 }
-render();
+
+
+/*
+    COPIAR
+*/
+
+copyButton.addEventListener("click", async function () {
+
+    try {
+
+        await navigator.clipboard.writeText(
+            output.textContent
+        );
+
+        const original = copyButton.textContent;
+
+        copyButton.textContent = "Copiado ✓";
+
+        setTimeout(() => {
+
+            copyButton.textContent = original;
+
+        }, 1800);
+
+    } catch {
+
+        alert("No se pudo copiar el contenido.");
+
+    }
+
+});
+
+
+/*
+    DESCARGAR TXT
+*/
+
+downloadButton.addEventListener("click", function () {
+
+    const text = output.textContent;
+
+    const blob = new Blob(
+        [text],
+        {
+            type: "text/plain;charset=utf-8"
+        }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download = "resultado.txt";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+});
